@@ -6,10 +6,6 @@ import openpyxl
 from openpyxl.styles import Alignment, Font
 from openpyxl.utils import get_column_letter
 
-from datetime import datetime
-from tkinter import Tk, filedialog
-
-
 SERVICIOS_VALIDOS = [
     'Actualiza Ariba',
     'SBN Órdenes',
@@ -20,10 +16,6 @@ SERVICIOS_VALIDOS = [
     'Relación Comercial',
     'Manual de procesos',
     'Eventos Mercantiles'
-]
-SOCIEDADES_VALIDAS = [
-    'GeoPark',
-    'Amerisur'
 ]
 
 def procesar_conversaciones(archivo_txt, archivo_csv):
@@ -41,7 +33,6 @@ def procesar_conversaciones(archivo_txt, archivo_csv):
                 if clave not in conversaciones:
                     conversaciones[clave] = []
                     links_chat[clave] = url if url.startswith("http") else ""
-                
                 conversaciones[clave].append({
                     "chatId": chatId,
                     "platformContactId": platformContactId,
@@ -54,14 +45,9 @@ def procesar_conversaciones(archivo_txt, archivo_csv):
                 })
 
     filas = []
-    autenticacion_por_numero = {} #Diccionario para autenticación por número
-    nit_por_numero = {}  # <-- Nuevo diccionario para NIT
 
-    # Recorre las conversaciones agrupadas por clave
     for clave, mensajes in conversaciones.items():
-        platform_id = mensajes[0]["platformContactId"]
-        autenticacion = autenticacion_por_numero.get(platform_id, "No")
-        nit_actual = nit_por_numero.get(platform_id, "")  # Usa el último NIT conocido o vacío
+        autenticacion = "No"
         bloques = []
         bloque_actual = None
         chatId = mensajes[0]["chatId"]
@@ -87,21 +73,19 @@ def procesar_conversaciones(archivo_txt, archivo_csv):
                 links_chat.get(clave, "")
             ])
             continue  # Salta el resto del procesamiento para este chat
-        
-        # Procesa los mensajes de la conversación
-#        if "test_chat" in chatId:
-#            bloques.append({
-#                "servicio": "Conversación de Prueba",
-#                "sociedad": "",
-#                "resultado": "No Encontrado",
-#                "documento": "",
-#                "correos": "",
-#                "nit": ""
-#            })
+
+        if "test_chat" in chatId:
+            bloques.append({
+                "servicio": "Conversación de Prueba",
+                "sociedad": "",
+                "resultado": "No Encontrado",
+                "documento": "",
+                "correos": "",
+                "nit": ""
+            })
 
         i = 0
         sociedad_temp = ""
-        
         while i < len(mensajes):
             m = mensajes[i]
             texto_total = f"{m['msg']} {m['extra']} {m['extra2']}".strip().lower()
@@ -117,7 +101,6 @@ def procesar_conversaciones(archivo_txt, archivo_csv):
 
             if m["sender"] == "user" and re.fullmatch(r"\d{5,}", m["msg"].strip()):
                 nit_valor = m["msg"].strip()
-                nit_actual = nit_valor  # Actualiza el NIT actual para este número
                 if bloque_actual:
                     bloque_actual["nit"] = nit_valor
                 else:
@@ -137,15 +120,9 @@ def procesar_conversaciones(archivo_txt, archivo_csv):
 
             if ultima_pregunta_servicio and m["sender"] == "user":
                 servicio_valor = m["msg"] or m["extra2"] or m["extra"]
-                # Validar si el servicio está en la lista de servicios válidos
-                if servicio_valor in SERVICIOS_VALIDOS:
-                    servicio_final = servicio_valor
-                else:
-                    servicio_final = ""  # O puedes poner "Servicio no válido" si prefieres
-
                 bloque_actual = {
-                    "servicio": servicio_final,
-                    "sociedad": sociedad_temp,
+                    "servicio": servicio_valor,
+                    "sociedad": sociedad_temp,  # Asigna sociedad si ya fue mencionada
                     "resultado": "No Encontrado",
                     "documento": "",
                     "correos": "",
@@ -194,13 +171,14 @@ def procesar_conversaciones(archivo_txt, archivo_csv):
                 "resultado": "No Encontrado",
                 "documento": "",
                 "correos": "",
-                "nit": nit_actual  # Usa el último NIT conocido
+                "nit": ""
             })
 
-        # Si algún bloque no tiene NIT, usa el último conocido
-        for b in bloques:
-            if not b.get("nit"):
-                b["nit"] = nit_actual
+        nit_global = next((b.get("nit", "") for b in bloques if b.get("nit", "")), "")
+        if nit_global:
+            for b in bloques:
+                if not b.get("nit"):
+                    b["nit"] = nit_global
 
         dt = datetime.fromisoformat(mensajes[0]["creationTime"].replace("Z", "+00:00"))
         fecha = dt.strftime("%Y-%m-%d")
@@ -214,8 +192,8 @@ def procesar_conversaciones(archivo_txt, archivo_csv):
             if b["resultado"] == "No Encontrado":
                 b["correos"] = ""
 
-            # Validar que la sociedad esté en el listado de sociedades válidas
-            sociedad_valida = b["sociedad"] if b["sociedad"] in SOCIEDADES_VALIDAS else ""
+            # Validar que el servicio esté en el listado de servicios válidos
+            servicio_valido = b["servicio"] if b["servicio"] in SERVICIOS_VALIDOS else "Otro"
 
             filas.append([
                 fecha,
@@ -224,21 +202,13 @@ def procesar_conversaciones(archivo_txt, archivo_csv):
                 mensajes[0]["platformContactId"],
                 b.get("nit", ""),
                 valor_autenticacion,
-                b["servicio"],
-                sociedad_valida,
+                servicio_valido,
+                b["sociedad"],
                 b["resultado"],
                 b["documento"],
                 b["correos"],
                 links_chat.get(clave, "")
             ])
-
-        # Si en algún bloque se generó un PDF, la autenticación será "Sí"
-        if any(".pdf" in (b.get("documento") or "").lower() for b in bloques):
-            autenticacion = "Sí"
-
-        # Guarda el valor de autenticación y NIT para este número para futuras conversaciones
-        autenticacion_por_numero[platform_id] = autenticacion
-        nit_por_numero[platform_id] = nit_actual
 
     with open(archivo_csv, "w", newline="", encoding="utf-8-sig") as f:
         writer = csv.writer(f, delimiter="|")
