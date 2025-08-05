@@ -206,9 +206,21 @@ def procesar_conversaciones(archivo_txt, archivo_xlsx):
         hora = dt.strftime("%H:%M:%S")
 
         for b in bloques:
-            valor_autenticacion = autenticacion
+            # Si el bloque tiene un documento, la autenticación será "Sí"
+            if b["documento"]:
+                valor_autenticacion = "Sí"
+            # Si el servicio está en SERVICIOS_CON_SOCIEDAD, la autenticación será "Sí"
+            elif b["servicio"] in SERVICIOS_CON_SOCIEDAD:
+                valor_autenticacion = "Sí"
+            # Si el servicio no está en SERVICIOS_CON_SOCIEDAD y la autenticación es "Sí", déjala vacía
+            elif b["servicio"] not in SERVICIOS_CON_SOCIEDAD and autenticacion == "Sí":
+                valor_autenticacion = ""
+            else:
+                valor_autenticacion = autenticacion
+
             if b["servicio"] == "Solo Saludo":
                 valor_autenticacion = ""
+
             # Si el resultado es "No Encontrado", no llenar correos enviados
             if b["resultado"] == "No Encontrado":
                 b["correos"] = ""
