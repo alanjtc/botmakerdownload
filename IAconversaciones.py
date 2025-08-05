@@ -26,7 +26,7 @@ SOCIEDADES_VALIDAS = [
     'Amerisur'
 ]
 
-def procesar_conversaciones(archivo_txt, archivo_csv):
+def procesar_conversaciones(archivo_txt, archivo_xlsx):
     patron = re.compile(r"^(.*?);(.*?);(.*?);(.*?);(.*?);(.*?);(.*?);(.*)$")
     conversaciones = {}
     links_chat = {}
@@ -54,8 +54,8 @@ def procesar_conversaciones(archivo_txt, archivo_csv):
                 })
 
     filas = []
-    autenticacion_por_numero = {} #Diccionario para autenticación por número
-    nit_por_numero = {}  # <-- Nuevo diccionario para NIT
+    autenticacion_por_numero = {}  # Diccionario para autenticación por número
+    nit_por_numero = {}  # Diccionario para NIT
 
     # Recorre las conversaciones agrupadas por clave
     for clave, mensajes in conversaciones.items():
@@ -87,18 +87,8 @@ def procesar_conversaciones(archivo_txt, archivo_csv):
                 links_chat.get(clave, "")
             ])
             continue  # Salta el resto del procesamiento para este chat
-        
-        # Procesa los mensajes de la conversación
-#        if "test_chat" in chatId:
-#            bloques.append({
-#                "servicio": "Conversación de Prueba",
-#                "sociedad": "",
-#                "resultado": "No Encontrado",
-#                "documento": "",
-#                "correos": "",
-#                "nit": ""
-#            })
 
+        # Procesa los mensajes de la conversación
         i = 0
         sociedad_temp = ""
         
@@ -240,23 +230,21 @@ def procesar_conversaciones(archivo_txt, archivo_csv):
         autenticacion_por_numero[platform_id] = autenticacion
         nit_por_numero[platform_id] = nit_actual
 
-    with open(archivo_csv, "w", newline="", encoding="utf-8-sig") as f:
-        writer = csv.writer(f, delimiter="|")
-        writer.writerow([
-            "Fecha", "Hora", "ID Conversación", "Celular Usuario", "NIT Proveedor",
-            "¿Autenticación Exitosa?", "Servicio Consultado", "Sociedad", "Resultado",
-            "Documento Generado", "Correos Enviados", "Link Conversación"
-        ])
-        writer.writerows(filas)
-
-def csv_a_xlsx(archivo_csv, archivo_xlsx):
+    # Crear archivo XLSX directamente
     wb = openpyxl.Workbook()
     ws = wb.active
 
-    # Leer CSV y agregar filas
-    with open(archivo_csv, encoding="utf-8-sig") as f:
-        for row in f:
-            ws.append(row.strip().split("|"))
+    # Escribir encabezados
+    encabezados = [
+        "Fecha", "Hora", "ID Conversación", "Celular Usuario", "NIT Proveedor",
+        "¿Autenticación Exitosa?", "Servicio Consultado", "Sociedad", "Resultado",
+        "Documento Generado", "Correos Enviados", "Link Conversación"
+    ]
+    ws.append(encabezados)
+
+    # Escribir filas
+    for fila in filas:
+        ws.append(fila)
 
     # Formatear encabezados
     header_font = Font(bold=True)
@@ -284,8 +272,9 @@ def csv_a_xlsx(archivo_csv, archivo_xlsx):
     wb.save(archivo_xlsx)
     print(f"✅ XLSX generado exitosamente en: {archivo_xlsx}")
 
+
 if __name__ == "__main__":
-    print("🚀 Procesador de conversaciones de bot a CSV")
+    print("🚀 Procesador de conversaciones de bot a XLSX")
     root = Tk()
     root.withdraw()
     archivo_txt = filedialog.askopenfilename(title="Selecciona el archivo .txt de entrada", filetypes=[("Archivos de texto", "*.txt")])
@@ -294,17 +283,11 @@ if __name__ == "__main__":
         root.destroy()
         exit()
 
-    archivo_csv = filedialog.asksaveasfilename(title="Guardar archivo CSV", defaultextension=".csv", filetypes=[("Archivo CSV", "*.csv")])
-    if not archivo_csv:
+    archivo_xlsx = filedialog.asksaveasfilename(title="Guardar archivo XLSX", defaultextension=".xlsx", filetypes=[("Archivo XLSX", "*.xlsx")])
+    if not archivo_xlsx:
         print("❌ No se seleccionó ubicación de salida.")
         root.destroy()
         exit()
 
-    procesar_conversaciones(archivo_txt, archivo_csv)
-    print("✅ CSV generado exitosamente en:", archivo_csv)
-
-    archivo_xlsx = filedialog.asksaveasfilename(title="Guardar archivo XLSX", defaultextension=".xlsx", filetypes=[("Archivo XLSX", "*.xlsx")])
-    if archivo_xlsx:
-        csv_a_xlsx(archivo_csv, archivo_xlsx)
-
+    procesar_conversaciones(archivo_txt, archivo_xlsx)
     root.destroy()
