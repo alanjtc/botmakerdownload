@@ -21,6 +21,14 @@ SERVICIOS_VALIDOS = [
     'Manual de procesos',
     'Eventos Mercantiles'
 ]
+
+SERVICIOS_CON_SOCIEDAD = [
+    'Cert. Tributarios',
+    'Facturas por pagar',
+    'Aviso de pagos',
+    'Relación Comercial',
+]
+
 SOCIEDADES_VALIDAS = [
     'GeoPark',
     'Amerisur'
@@ -99,10 +107,10 @@ def procesar_conversaciones(archivo_txt, archivo_xlsx):
             if "te damos la bienvenida" in texto_total:
                 autenticacion = "Sí"
 
-            # Captura sociedad aunque aún no se haya creado el bloque_actual
+            # Captura sociedad solo si el servicio está en SERVICIOS_CON_SOCIEDAD
             if m["sender"] == "user" and any(s in texto_total for s in ["geopark", "amerisur"]):
                 sociedad_temp = m["msg"] or m["extra2"] or m["extra"]
-                if bloque_actual:
+                if bloque_actual and bloque_actual["servicio"] in SERVICIOS_CON_SOCIEDAD:
                     bloque_actual["sociedad"] = sociedad_temp
 
             if m["sender"] == "user" and re.fullmatch(r"\d{5,}", m["msg"].strip()):
@@ -113,7 +121,7 @@ def procesar_conversaciones(archivo_txt, archivo_xlsx):
                 else:
                     bloques.append({
                         "servicio": "",
-                        "sociedad": sociedad_temp,
+                        "sociedad": sociedad_temp if bloque_actual and bloque_actual["servicio"] in SERVICIOS_CON_SOCIEDAD else "",
                         "resultado": "No Encontrado",
                         "documento": "",
                         "correos": "",
@@ -135,7 +143,7 @@ def procesar_conversaciones(archivo_txt, archivo_xlsx):
 
                 bloque_actual = {
                     "servicio": servicio_final,
-                    "sociedad": sociedad_temp,
+                    "sociedad": sociedad_temp if servicio_final in SERVICIOS_CON_SOCIEDAD else "",
                     "resultado": "No Encontrado",
                     "documento": "",
                     "correos": "",
@@ -148,7 +156,8 @@ def procesar_conversaciones(archivo_txt, archivo_xlsx):
 
             # Si la sociedad se menciona después de escoger servicio, también la asigna
             if bloque_actual and m["sender"] == "user" and any(s in texto_total for s in ["geopark", "amerisur"]):
-                bloque_actual["sociedad"] = m["msg"] or m["extra2"] or m["extra"]
+                if bloque_actual["servicio"] in SERVICIOS_CON_SOCIEDAD:
+                    bloque_actual["sociedad"] = m["msg"] or m["extra2"] or m["extra"]
 
             # Buscar documento PDF y extraer correos de la siguiente línea si corresponde
             documento_encontrado = False
