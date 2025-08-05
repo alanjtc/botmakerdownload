@@ -136,7 +136,7 @@ def procesar_conversaciones(archivo_txt, archivo_xlsx):
             if ultima_pregunta_servicio and m["sender"] == "user":
                 servicio_valor = m["msg"] or m["extra2"] or m["extra"]
                 # Validar si el servicio está en la lista de servicios válidos
-                if servicio_valor in SERVICIOS_VALIDOS:
+                if any(servicio in servicio_valor for servicio in SERVICIOS_VALIDOS):
                     servicio_final = servicio_valor
                 else:
                     servicio_final = ""  # O puedes poner "Servicio no válido" si prefieres
@@ -209,14 +209,6 @@ def procesar_conversaciones(archivo_txt, archivo_xlsx):
             # Si el bloque tiene un documento, la autenticación será "Sí"
             if b["documento"]:
                 valor_autenticacion = "Sí"
-            # Si el servicio está en SERVICIOS_CON_SOCIEDAD, la autenticación será "Sí"
-            elif b["servicio"] in SERVICIOS_CON_SOCIEDAD:
-                valor_autenticacion = "Sí"
-            # Si el servicio no está en SERVICIOS_CON_SOCIEDAD y la autenticación es "Sí", déjala vacía
-            elif b["servicio"] not in SERVICIOS_CON_SOCIEDAD and autenticacion == "Sí":
-                valor_autenticacion = ""
-            else:
-                valor_autenticacion = autenticacion
 
             if b["servicio"] == "Solo Saludo":
                 valor_autenticacion = ""
