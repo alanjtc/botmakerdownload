@@ -106,9 +106,6 @@ def procesar_conversaciones(archivo_txt, archivo_xlsx):
 
             if "te damos la bienvenida" in texto_total:
                 autenticacion = "Sí"
-            # Si el servicio está en SERVICIOS_CON_SOCIEDAD, la autenticación será "Sí"
-            elif b["servicio"] in SERVICIOS_CON_SOCIEDAD:
-                valor_autenticacion = "Sí"
 
             # Captura sociedad solo si el servicio está en SERVICIOS_CON_SOCIEDAD
             if m["sender"] == "user" and any(s in texto_total for s in ["geopark", "amerisur"]):
@@ -212,6 +209,11 @@ def procesar_conversaciones(archivo_txt, archivo_xlsx):
             # Si el bloque tiene un documento, la autenticación será "Sí"
             if b["documento"]:
                 valor_autenticacion = "Sí"
+            # Si el servicio está en SERVICIOS_CON_SOCIEDAD, la autenticación será "Sí"
+            elif b["servicio"] in SERVICIOS_CON_SOCIEDAD:
+                valor_autenticacion = "Sí"
+            else:
+                valor_autenticacion = autenticacion
 
             if b["servicio"] == "Solo Saludo":
                 valor_autenticacion = ""
