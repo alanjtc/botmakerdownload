@@ -21,6 +21,10 @@ SERVICIOS_VALIDOS = [
     'Manual de procesos',
     'Eventos Mercantiles'
 ]
+SOCIEDADES_VALIDAS = [
+    'GeoPark',
+    'Amerisur'
+]
 
 def procesar_conversaciones(archivo_txt, archivo_csv):
     patron = re.compile(r"^(.*?);(.*?);(.*?);(.*?);(.*?);(.*?);(.*?);(.*)$")
@@ -206,6 +210,9 @@ def procesar_conversaciones(archivo_txt, archivo_csv):
             if b["resultado"] == "No Encontrado":
                 b["correos"] = ""
 
+            # Validar que la sociedad esté en el listado de sociedades válidas
+            sociedad_valida = b["sociedad"] if b["sociedad"] in SOCIEDADES_VALIDAS else ""
+
             filas.append([
                 fecha,
                 hora,
@@ -214,7 +221,7 @@ def procesar_conversaciones(archivo_txt, archivo_csv):
                 b.get("nit", ""),
                 valor_autenticacion,
                 b["servicio"],
-                b["sociedad"],
+                sociedad_valida,
                 b["resultado"],
                 b["documento"],
                 b["correos"],
