@@ -9,6 +9,7 @@ from openpyxl.utils import get_column_letter
 from datetime import datetime
 from tkinter import Tk, filedialog
 
+VALORES_AUTENTICACION = ["Autenticación Exitosa", "Contacto No Vinculado A Proveedor", "No Concluida"]
 
 SERVICIOS_VALIDOS = [
     'Actualiza Ariba',
@@ -19,7 +20,7 @@ SERVICIOS_VALIDOS = [
     'Aviso de pagos',
     'Relación Comercial',
     'Manual de procesos',
-    'Eventos Mercantiles'
+    'Eventos Mercantiles'
 ]
 
 SERVICIOS_CON_SOCIEDAD = [
@@ -206,17 +207,24 @@ def procesar_conversaciones(archivo_txt, archivo_xlsx):
         hora = dt.strftime("%H:%M:%S")
 
         for b in bloques:
-            # Si el bloque tiene un documento, la autenticación será "Sí"
+            # Determina el valor base de autenticación ("Sí"/"No"/"Fallida"/"")
             if b["documento"]:
-                valor_autenticacion = "Sí"
-            # Si el servicio está en SERVICIOS_CON_SOCIEDAD, la autenticación será "Sí"
+                base_autenticacion = "Sí"
             elif b["servicio"] in SERVICIOS_CON_SOCIEDAD:
-                valor_autenticacion = "Sí"
+                base_autenticacion = "Sí"
             else:
-                valor_autenticacion = autenticacion
+                base_autenticacion = autenticacion  # valor previo por número ("Sí", "No", etc.)
 
             if b["servicio"] == "Solo Saludo":
-                valor_autenticacion = ""
+                base_autenticacion = ""  # forzar vacío en solo saludo
+
+            # Mapear a los valores definidos en VALORES_AUTENTICACION
+            if base_autenticacion == "Sí":
+                valor_autenticacion = VALORES_AUTENTICACION[0]  # "Autenticación Exitosa"
+            elif base_autenticacion== "No":
+                valor_autenticacion = VALORES_AUTENTICACION[1]  # "Autenticación Fallida"
+            else:
+                valor_autenticacion = VALORES_AUTENTICACION[2]  # ""
 
             # Si el resultado es "No Encontrado", no llenar correos enviados
             if b["resultado"] == "No Encontrado":
@@ -224,6 +232,10 @@ def procesar_conversaciones(archivo_txt, archivo_xlsx):
 
             # Validar que la sociedad esté en el listado de sociedades válidas
             sociedad_valida = b["sociedad"] if b["sociedad"] in SOCIEDADES_VALIDAS else ""
+
+            # Nueva validación: si autenticación es "Autenticación Exitosa" pero no hay servicio, no mostrar la conversación
+            if valor_autenticacion == VALORES_AUTENTICACION[0] and not (b.get("servicio") and b.get("servicio").strip()):
+                continue
 
             filas.append([
                 fecha,
