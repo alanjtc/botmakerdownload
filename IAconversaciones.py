@@ -76,26 +76,9 @@ def procesar_conversaciones(archivo_txt, archivo_xlsx):
         chatId = mensajes[0]["chatId"]
         ultima_pregunta_servicio = False
 
-        # Si es conversación de prueba, solo agrega una fila y continúa con la siguiente conversación
+        # Si es conversación de prueba, omitirla (no agregar fila)
         if "geoparkbot_test_chat" in mensajes[0]["platformContactId"]:
-            dt = datetime.fromisoformat(mensajes[0]["creationTime"].replace("Z", "+00:00"))
-            fecha = dt.strftime("%Y-%m-%d")
-            hora = dt.strftime("%H:%M:%S")
-            filas.append([
-                fecha,
-                hora,
-                chatId,
-                mensajes[0]["platformContactId"],
-                "",  # NIT
-                "",  # Autenticación
-                "ConversacionPruebas",
-                "",  # Sociedad
-                "No Encontrado",
-                "",  # Documento
-                "",  # Correos
-                links_chat.get(clave, "")
-            ])
-            continue  # Salta el resto del procesamiento para este chat
+            continue  # Omitir conversaciones de prueba
 
         # Procesa los mensajes de la conversación
         i = 0
@@ -207,7 +190,7 @@ def procesar_conversaciones(archivo_txt, archivo_xlsx):
         hora = dt.strftime("%H:%M:%S")
 
         for b in bloques:
-            # Determina el valor base de autenticación ("Sí"/"No"/"Fallida"/"")
+            # Determina el valor base de autenticación ("Sí"/"No"/"")
             if b["documento"]:
                 base_autenticacion = "Sí"
             elif b["servicio"] in SERVICIOS_CON_SOCIEDAD:
@@ -215,16 +198,19 @@ def procesar_conversaciones(archivo_txt, archivo_xlsx):
             else:
                 base_autenticacion = autenticacion  # valor previo por número ("Sí", "No", etc.)
 
+            # Si es "Solo Saludo" la columna autenticación queda vacía
             if b["servicio"] == "Solo Saludo":
-                base_autenticacion = ""  # forzar vacío en solo saludo
-
-            # Mapear a los valores definidos en VALORES_AUTENTICACION
-            if base_autenticacion == "Sí":
-                valor_autenticacion = VALORES_AUTENTICACION[0]  # "Autenticación Exitosa"
-            elif base_autenticacion== "No":
-                valor_autenticacion = VALORES_AUTENTICACION[1]  # "Autenticación Fallida"
+                valor_autenticacion = VALORES_AUTENTICACION[2]
             else:
-                valor_autenticacion = VALORES_AUTENTICACION[2]  # ""
+                # Normalizar y mapear valores (evita valores vacíos)
+                ba = (base_autenticacion or "").strip().lower()
+                if ba in ("sí", "si", "s", "yes", "y"):
+                    valor_autenticacion = VALORES_AUTENTICACION[0]  # "Autenticación Exitosa"
+                elif ba in ("no", "n", "false", "0"):
+                    valor_autenticacion = VALORES_AUTENTICACION[1]  # "Contacto No Vinculado A Proveedor"
+                else:
+                    # Valor por defecto cuando no hay información clara
+                    valor_autenticacion = VALORES_AUTENTICACION[2]  # "No Concluida"
 
             # Si el resultado es "No Encontrado", no llenar correos enviados
             if b["resultado"] == "No Encontrado":
@@ -233,9 +219,16 @@ def procesar_conversaciones(archivo_txt, archivo_xlsx):
             # Validar que la sociedad esté en el listado de sociedades válidas
             sociedad_valida = b["sociedad"] if b["sociedad"] in SOCIEDADES_VALIDAS else ""
 
-            # Nueva validación: si autenticación es "Autenticación Exitosa" pero no hay servicio, no mostrar la conversación
+            # Si autenticación es "Autenticación Exitosa" pero no hay servicio, no mostrar la conversación
             if valor_autenticacion == VALORES_AUTENTICACION[0] and not (b.get("servicio") and b.get("servicio").strip()):
                 continue
+
+            # Solo se modifica el valor mostrado en la columna "Servicio" si está vacío;
+            # no se modifica el valor de autenticación.
+            if not (b.get("servicio") and b.get("servicio").strip()):
+                servicio_mostrar = VALORES_AUTENTICACION[1]
+            else:
+                servicio_mostrar = b["servicio"]
 
             filas.append([
                 fecha,
@@ -244,7 +237,7 @@ def procesar_conversaciones(archivo_txt, archivo_xlsx):
                 mensajes[0]["platformContactId"],
                 b.get("nit", ""),
                 valor_autenticacion,
-                b["servicio"],
+                servicio_mostrar,
                 sociedad_valida,
                 b["resultado"],
                 b["documento"],
