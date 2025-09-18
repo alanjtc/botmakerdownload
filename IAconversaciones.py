@@ -10,7 +10,7 @@ from datetime import datetime
 from tkinter import Tk, filedialog
 
 VALORES_AUTENTICACION = ["Autenticación Exitosa", "Contacto No Vinculado A Proveedor", "No Concluida"]
-
+VALORES_RESULTADO = ["Entrega Exitosa", "No encontró información"]
 SERVICIOS_VALIDOS = [
     'Actualiza Ariba',
     'SBN Órdenes',
@@ -216,6 +216,12 @@ def procesar_conversaciones(archivo_txt, archivo_xlsx):
             if b["resultado"] == "No Encontrado":
                 b["correos"] = ""
 
+            # Mapear valor de resultado a VALORES_RESULTADO
+            if b.get("resultado") == "Encontrado":
+                resultado_mostrar = VALORES_RESULTADO[0]  # "Entrega Exitosa"
+            else:
+                resultado_mostrar = VALORES_RESULTADO[1]  # "No encontró información"
+
             # Validar que la sociedad esté en el listado de sociedades válidas
             sociedad_valida = b["sociedad"] if b["sociedad"] in SOCIEDADES_VALIDAS else ""
 
@@ -239,7 +245,7 @@ def procesar_conversaciones(archivo_txt, archivo_xlsx):
                 valor_autenticacion,
                 servicio_mostrar,
                 sociedad_valida,
-                b["resultado"],
+                resultado_mostrar,
                 b["documento"],
                 b["correos"],
                 links_chat.get(clave, "")
