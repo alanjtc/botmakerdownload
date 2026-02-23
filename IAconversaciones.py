@@ -8,27 +8,10 @@ from openpyxl.utils import get_column_letter
 
 from datetime import datetime
 from tkinter import Tk, filedialog
-
 VALORES_AUTENTICACION = ["Autenticación Exitosa", "Contacto No Vinculado A Proveedor", "No Concluida"]
 VALORES_RESULTADO = ["Entrega Exitosa", "No encontró información"]
-SERVICIOS_VALIDOS = [
-    'Actualiza Ariba',
-    'SBN Órdenes',
-    'SBN Facturas',
-    'Cert. Tributarios',
-    'Facturas por pagar',
-    'Aviso de pagos',
-    'Relación Comercial',
-    'Manual de procesos',
-    'Eventos Mercantiles'
-]
-
-SERVICIOS_CON_SOCIEDAD = [
-    'Cert. Tributarios',
-    'Facturas por pagar',
-    'Aviso de pagos',
-    'Relación Comercial',
-]
+SERVICIOS_VALIDOS = [ 'Actualiza Ariba','SBN Órdenes','SBN Facturas','Cert. Tributarios','Facturas por pagar','Aviso de pagos','Relación Comercial','Manual de procesos','Eventos Mercantiles']
+SERVICIOS_CON_SOCIEDAD = ['Cert. Tributarios','Facturas por pagar','Aviso de pagos','Relación Comercial',]
 
 SOCIEDADES_VALIDAS = [
     'GeoPark',
