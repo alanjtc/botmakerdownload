@@ -19,7 +19,13 @@ SOCIEDADES_VALIDAS = [
 ]
 
 def procesar_conversaciones(archivo_txt, archivo_xlsx):
-    patron = re.compile(r"^(.*?);(.*?);(.*?);(.*?);(.*?);(.*?);(.*?);(.*)$")
+    # El archivo original tenía 8 columnas separadas por ";".
+    # A veces ahora se inserta una columna adicional para la plataforma
+    # (ej. "WhatsApp") entre el ID del contacto y la fecha.  El regex
+    # a continuación usa un grupo sin captura opcional para descartar ese
+    # campo si está presente, de modo que `creationTime` siempre sea el
+    # valor correcto.
+    patron = re.compile(r"^(.*?);(.*?);(?:.*?;)?(.*?);(.*?);(.*?);(.*?);(.*?);(.*)$")
     conversaciones = {}
     links_chat = {}
 
@@ -168,7 +174,14 @@ def procesar_conversaciones(archivo_txt, archivo_xlsx):
             if not b.get("nit"):
                 b["nit"] = nit_actual
 
-        dt = datetime.fromisoformat(mensajes[0]["creationTime"].replace("Z", "+00:00"))
+        # Intentamos convertir la fecha de creación; si no es un ISO válido
+        # (p.ej. quedó la plataforma en vez del timestamp), omitimos la
+        # conversación completa y avisamos en consola.
+        try:
+            dt = datetime.fromisoformat(mensajes[0]["creationTime"].replace("Z", "+00:00"))
+        except Exception as e:
+            print(f"⚠️ Fecha inválida para clave {clave}: {mensajes[0]['creationTime']} (se omite conversación)")
+            continue
         fecha = dt.strftime("%Y-%m-%d")
         hora = dt.strftime("%H:%M:%S")
 
